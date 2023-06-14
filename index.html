@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<link rel="stylesheet" href="edit.css">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="header">
+        <div>
+            <h1> Upload and Apply Filter</h1>
+            <canvas id="can">
+            </canvas>
+            <div class="first_step">
+                select image:
+                <input type="file" multiple="false"
+                       accept="image/*" id="finput" onchange="fupload()">
+            </div>
+            <div class="first_step second">
+                select filter:
+                <input type="button"  value="fit" onclick="applyfit()">
+                <input type ="button" value="grayscale" onclick="dogray()">
+                <input type="button" value="red" onclick="dored()">
+                <input type = "button" value="contrast" onclick="docontrast()">
+                <input type = "button" value="blur" onclick="doblur()">
+                <input type = "button" value="Mirror Image" onclick="applymirror()">
+                <input type="button" value="reset" onclick="doreset()">
+                <input type="button" value="Download" onclick="downloadImage()">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('can');
+        const ctx = canvas.getContext('2d');
+        let originalImage = null;
+        let filteredImage = null;
+
+        function fupload() {
+        const fileInput = document.getElementById('finput');
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.drawImage(img, 0, 0);
+            originalImage = img;
+            filteredImage = img;
+            };
+            img.src = e.target.result;
+        };
+
+        reader.readAsDataURL(file);
+        }
+
+        function applyfit() {
+            if (loadimage(fitimage)) {
+                filterfit();
+                fitimage.drawTo(canvas);
+            }
+            }
+
+            function filterfit() {
+            const width = fitimage.getWidth();
+            const height = fitimage.getHeight();
+            const imageData = fitimage.getImageData();
+            const data = imageData.data;
+
+            for (let i = 0; i < width; i++) {
+                for (let j = 0; j < height; j++) {
+                const index = (j * width + i) * 4;
+                if (i <= 20 || i >= width - 20) {
+                    // Set pixel color to white
+                    data[index] = 255;     // Red channel
+                    data[index + 1] = 255; // Green channel
+                    data[index + 2] = 255; // Blue channel
+                }
+                }
+            }
+
+            fitimage.setImageData(imageData);
+            }
+
+        function dogray() {
+        if (originalImage !== null) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(originalImage, 0, 0);
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            data[i] = avg;
+            data[i + 1] = avg;
+            data[i + 2] = avg;
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            filteredImage = new Image();
+            filteredImage.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.drawImage(filteredImage, 0, 0);
+            };
+            filteredImage.src = tempCanvas.toDataURL();
+        }
+        }
+
+        function dored() {
+        if (originalImage !== null) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(originalImage, 0, 0);
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+            data[i + 1] = 0; // Set green channel to 0
+            data[i + 2] = 0; // Set blue channel to 0
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            filteredImage = new Image();
+            filteredImage.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.drawImage(filteredImage, 0, 0);
+            };
+            filteredImage.src = tempCanvas.toDataURL();
+        }
+        }
+
+        function docontrast() {
+        if (originalImage !== null) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(originalImage, 0, 0);
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+
+            const contrast = 50;
+
+            for (let i = 0; i < data.length; i += 4) {
+            data[i] = Math.round((data[i] - 128) * contrast + 128); // Apply contrast to red channel
+            data[i + 1] = Math.round((data[i + 1] - 128) * contrast + 128); // Apply contrast to green channel
+            data[i + 2] = Math.round((data[i + 2] - 128) * contrast + 128); // Apply contrast to blue channel
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            filteredImage = new Image();
+            filteredImage.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.drawImage(filteredImage, 0, 0);
+            };
+            filteredImage.src = tempCanvas.toDataURL();
+        }
+        }
+
+        function doblur() {
+        if (originalImage !== null) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.filter = 'blur(5px)'; // Adjust the blur radius as desired
+            tempCtx.drawImage(originalImage, 0, 0);
+            filteredImage = new Image();
+            filteredImage.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.drawImage(filteredImage, 0, 0);
+            };
+            filteredImage.src = tempCanvas.toDataURL();
+        }
+        }
+
+        function applymirror() {
+            if (loadimage(fitimage)) {
+                filtermirror();
+                fitimage.drawTo(canvas);
+            }
+            }
+
+            function filtermirror() {
+            const width = fitimage.getWidth();
+            const height = fitimage.getHeight();
+            const imageData = fitimage.getImageData();
+            const data = imageData.data;
+
+            for (let i = 0; i < width / 2; i++) {
+                for (let j = 0; j < height; j++) {
+                const index1 = (j * width + i) * 4; // Pixel index from the left side
+                const index2 = (j * width + (width - 1 - i)) * 4; // Pixel index from the right side
+
+                // Swap pixel colors between left and right sides
+                const tempR = data[index1];
+                const tempG = data[index1 + 1];
+                const tempB = data[index1 + 2];
+
+                data[index1] = data[index2];
+                data[index1 + 1] = data[index2 + 1];
+                data[index1 + 2] = data[index2 + 2];
+
+                data[index2] = tempR;
+                data[index2 + 1] = tempG;
+                data[index2 + 2] = tempB;
+                }
+            }
+
+            fitimage.setImageData(imageData);
+            }
+
+        function doreset() {
+        if (originalImage !== null) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.drawImage(originalImage, 0, 0);
+            filteredImage = originalImage;
+        }
+        }
+
+        function downloadImage() {
+        if (filteredImage !== null) {
+            const link = document.createElement('a');
+            link.href = filteredImage.src;
+            link.download = 'modified_image.png';
+            link.click();
+        }
+        }
+    </script>
+</body>
+</html>
